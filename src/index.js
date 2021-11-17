@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { isUUID } = require('validator')
 
 const { v4: uuidv4, validate } = require('uuid');
 
@@ -10,19 +11,70 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+	const { username } = request.headers
+
+	const user = users.find(user => user.username === username)
+
+	if(!user) {
+		return response.status(404).json({error: "User not found!"})
+	}
+
+	request.user = user 
+
+	next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+	const { user } = request
+
+	if(user.pro === false & user.todos.length >= 10) {
+		return response.status(403).json({error: 'You already have 10 todos, consider subscribe to pro'})
+	}
+
+	next()
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+	const { username } = request.headers
+
+	const user = users.find(user => user.username === username)
+
+	if(!user) {
+		return response.status(404).json({error: "User not found!"})
+	}
+
+	const { id } = request.params
+
+	// validate id as uuid
+	if (!isUUID(id)){
+		return response.status(400).json({error: 'ID is not UUID'})
+	}
+
+	const todo = user.todos.find(todo => todo.id === id)
+	
+	// validate id belongs to user
+	if (!todo) {
+		return response.status(404).json({error: 'ID does not belong to user or does not exists!'})
+	}
+
+	request.user = user
+	request.todo = todo
+
+	next()
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+	const { id } = request.params
+
+	const user = users.find(user => user.id === id)
+
+	if (!user) {
+		return response.status(404).json({error: 'User not found!'})
+	}
+
+	request.user = user
+
+	next()
 }
 
 app.post('/users', (request, response) => {
